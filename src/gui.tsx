@@ -1,6 +1,7 @@
 import { Show, createSignal, onCleanup } from "solid-js"
 import { Plugin, Slot } from "@opencode/plugin/gui"
 import { summarize, type UsageData } from "./usage"
+import { createPoller } from "./poll"
 
 const REFRESH_MS = 30_000
 
@@ -15,6 +16,7 @@ export default Plugin.define({
       signedOut: "Sign in to OpenCode Console for Go usage",
       noPlan: "Go plan not active",
       failed: "Go usage unavailable",
+      stale: "stale",
     },
     "zh-Hans": {
       label: "Go · 5h {{rolling}}% · 周 {{weekly}}% · 月 {{monthly}}%",
@@ -23,6 +25,7 @@ export default Plugin.define({
       signedOut: "登录 OpenCode Console 后显示 Go 用量",
       noPlan: "未开通 Go 套餐",
       failed: "Go 用量获取失败",
+      stale: "获取失败",
     },
   },
   setup(ctx) {
@@ -30,18 +33,25 @@ export default Plugin.define({
     const [state, setState] = createSignal<State>("loading")
     const [error, setError] = createSignal("")
 
-    const refresh = async () => {
+    let lastError = ""
+
+    const refresh = createPoller(async () => {
       try {
-        const result = await ctx.client.experimental.usage.limits()
+        const result = await ctx.client.experimental.usage.limits(undefined, { signal: ctx.signal })
+        if (ctx.signal.aborted) return
         setData(result.data)
         setState(result.data ? "noPlan" : "signedOut")
         setError("")
+        lastError = ""
       } catch (cause) {
-        console.warn("[usage-meter]", cause)
-        setError(String(cause))
+        if (ctx.signal.aborted) return
+        const message = String(cause)
+        if (message !== lastError) console.warn("[usage-meter]", cause)
+        lastError = message
+        setError(message)
         setState("failed")
       }
-    }
+    })
 
     void refresh()
     const timer = setInterval(() => void refresh(), REFRESH_MS)
@@ -56,26 +66,28 @@ export default Plugin.define({
         <div style={{ display: "flex", "justify-content": "flex-end", width: "100%", "font-size": "11px" }}>
           <Show
             when={summarize(data())}
-            fallback={<span title={state() === "failed" ? error() : undefined} style={{ opacity: 0.6 }}>{status()}</span>}
+            fallback={<span title={state() === "failed" ? error() : undefined}>{status()}</span>}
           >
-            {(summary) => (
-              <button
-                type="button"
-                title={ctx.t(summary().limited ? "limited" : "label", summary())}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: "0",
-                  font: "inherit",
-                  color: "inherit",
-                  cursor: "pointer",
-                  opacity: 0.75,
-                }}
-                onClick={() => ctx.system.openExternal(summary().usageURL)}
-              >
-                {ctx.t(summary().limited ? "limited" : "label", summary())}
-              </button>
-            )}
+            {(summary) => {
+              const labelText = () => ctx.t(summary().limited ? "limited" : "label", summary())
+              return (
+                <button
+                  type="button"
+                  title={state() === "failed" ? error() : labelText()}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: "0 4px",
+                    font: "inherit",
+                    color: "inherit",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => ctx.system.openExternal(summary().usageURL)}
+                >
+                  {state() === "failed" ? `${labelText()} · ${ctx.t("stale")}` : labelText()}
+                </button>
+              )
+            }}
           </Show>
         </div>
       ),
