@@ -45,10 +45,12 @@ and monthly percentages. Clicking opens the workspace's Console usage page.
 - Package `opencode-usage-meter`, GUI-only, no server part.
 - On setup, fetch once and then every 30 seconds. Keep the last successful
   value when a refresh fails.
-- When there is no data: show a muted status (`Go 用量加载中…`, `未开通 Go
-  套餐`, or `Go 用量获取失败`). The raw error is only in the tooltip.
+- When there is no data: show a muted status (`Go 用量加载中…`, `登录
+  OpenCode Console 后显示 Go 用量`, `未开通 Go 套餐`, or `Go 用量获取失败`).
+  The raw error is only in the tooltip.
 - Render the summary as `Go · 5h {r}% · 周 {w}% · 月 {m}%` for `zh-Hans`,
   with `5h / wk / mo` for English, right-aligned in the bottom status bar.
+  Append `· 已受限` when any window reports `limited`.
 - Click: `ctx.system.openExternal(workspace.usageURL)`.
 - Percentages are rounded and clamped to 0–100.
 - Build with Vite's `@opencode/plugin/gui/vite` preset to a single

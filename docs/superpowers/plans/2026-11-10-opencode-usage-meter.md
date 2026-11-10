@@ -31,8 +31,8 @@
 
 ## Review Focus
 
-- Console not signed in (`data: null`): the pill must be absent, not an empty icon.
-- Go allowance absent at runtime: the pill must be absent.
+- Console not signed in (`data: null`): show the muted sign-in status line, no button.
+- Go allowance absent at runtime: show the muted "plan not active" line, no button.
 - Endpoint fails or server restarts: keep the last good value; never throw an unhandled rejection.
 - Fractional or out-of-range percentages: round and clamp to 0–100.
 - Plugin reload or window close: clear the interval and withdraw the item; no duplicates.

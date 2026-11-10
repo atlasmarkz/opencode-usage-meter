@@ -1,7 +1,7 @@
 {
   "name": "opencode-usage-meter",
   "version": "0.1.0",
-  "description": "Coding plan usage meter in the OpenCode Desktop titlebar",
+  "description": "OpenCode Go usage meter in the OpenCode Desktop bottom status bar",
   "type": "module",
   "license": "MIT",
   "author": "AMark-CS",
