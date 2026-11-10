@@ -2,9 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A GUI-only OpenCode Desktop plugin that shows OpenCode Go usage in the titlebar and publishes to npm/OpenDock.
+**Goal:** A GUI-only OpenCode Desktop plugin that shows OpenCode Go usage in the bottom status bar and publishes to npm/OpenDock.
 
-**Architecture:** One pure function turns the app's usage response into a display summary. A Solid GUI plugin polls `ctx.client.experimental.usage.limits()` every 30 seconds and contributes one `TitlebarItem`.
+**Architecture:** One pure function turns the app's usage response into a display summary. A Solid GUI plugin polls `ctx.client.experimental.usage.limits()` every 30 seconds and contributes one `window.bottom` slot.
+
+> **Execution deviation (2026-11-10):** Tasks 1–2 implemented a `TitlebarItem`
+> pill. After live use the user asked for the existing bottom status bar
+> instead, so `src/gui.tsx` now contributes a `Slot` at `window.bottom` with
+> always-visible text. The spec has been updated; the code snippets in Task 2
+> below are historical. Also learned: `Slot.render` runs once per mount, so
+> the conditional must use Solid `Show` (or another reactive primitive), not
+> a plain `summary ? … : …` evaluated inside `render`.
 
 **Tech Stack:** TypeScript, Solid, Vite (`@opencode/plugin/gui/vite`), Bun test.
 
@@ -16,7 +24,8 @@
 - GUI-only: no server part, no credentials, no new runtime dependency besides `@opencode/plugin`.
 - Works with OpenCode Desktop 2.2.6; `@opencode/plugin` pinned to `2.2.6`.
 - npm keyword `opencode-plugin` is required for OpenDock indexing.
-- Titlebar label is only visible on hover; do not try to override host CSS.
+- Titlebar labels were hidden until hover; the final surface is the
+  always-visible `window.bottom` slot instead.
 - Percentages shown are 0–100 integers.
 - No Volcengine, MiniMax, budgets, TUI, settings page, or history.
 
@@ -350,11 +359,11 @@ grep -ri "opencode-usage-meter" ~/Library/Logs ~/.local/share/opencode/log 2>/de
 
 Expected: no load/parse errors. If the log path is not present, locate the desktop log with `ls ~/Library/Logs | grep -i opencode`.
 
-- [ ] **Step 4: Verify the pill renders**
+- [ ] **Step 4: Verify the line renders**
 
-Run: `screencapture -x /tmp/opencode-usage-meter.png`
-
-Read the image and confirm the `window-analytics` pill is in the titlebar's top-right area. If the desktop window is covered, bring it forward first.
+Ask the user to look at the bottom status bar (screen capture is blocked by
+macOS TCC in this environment). Expected: `Go · 5h …% · 周 …% · 月 …%`
+right-aligned, or a muted status line when the API returns null.
 
 - [ ] **Step 5: Verify the numbers against the API**
 
@@ -364,7 +373,7 @@ Run:
 /Users/mark/Library/Application\ Support/ai.opencode.desktop/cli/2.2.6-arm64/opencode-cli api get /api/experimental/usage/limits
 ```
 
-Hover the pill and confirm `5h / 周 / 月` match `go.rolling.percent / weekly.percent / monthly.percent`. Click it and confirm the Console usage page opens.
+Confirm `5h / 周 / 月` match `go.rolling.percent / weekly.percent / monthly.percent`. Click the line and confirm the Console usage page opens.
 
 - [ ] **Step 6: Commit any fixes**
 
